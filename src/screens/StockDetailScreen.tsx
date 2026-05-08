@@ -1,7 +1,15 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
+import { Moon, Sun } from "lucide-react-native";
 import React from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import SignalBadge from "../components/components/SignalBadge";
 import { useAppStore } from "../store/useAppStore";
 
@@ -256,7 +264,7 @@ const AdvancedChart = ({
 // ─── Main Screen Component ───────────────────────────────────────────────────
 export default function StockDetailScreen() {
   const params = useLocalSearchParams<{ ticker?: string }>();
-  const { isDarkMode, userMode } = useAppStore();
+  const { isDarkMode, userMode, setUserMode, toggleDarkMode } = useAppStore();
   const colors = getColors(isDarkMode);
   const stock = MOCK_STOCK;
 
@@ -269,10 +277,23 @@ export default function StockDetailScreen() {
         {/* ── Header Section ── */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <Text style={[styles.ticker, { color: colors.text }]}>
-              {params.ticker || stock.ticker}
-            </Text>
-            <SignalBadge signal={stock.signal} />
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <Text style={[styles.ticker, { color: colors.text }]}>
+                {params.ticker || stock.ticker}
+              </Text>
+              <SignalBadge signal={stock.signal} />
+            </View>
+
+            {/* ── Dark/Light Mode Toggle ── */}
+            <TouchableOpacity onPress={toggleDarkMode} style={{ padding: 8 }}>
+              {isDarkMode ? (
+                <Sun color={colors.textSecondary} size={24} />
+              ) : (
+                <Moon color={colors.textSecondary} size={24} />
+              )}
+            </TouchableOpacity>
           </View>
           <Text style={[styles.companyName, { color: colors.textSecondary }]}>
             {stock.companyName}
@@ -305,7 +326,61 @@ export default function StockDetailScreen() {
             </View>
           </View>
         </View>
-
+        <View
+          style={[
+            styles.toggleContainer,
+            {
+              backgroundColor: isDarkMode
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            },
+          ]}
+        >
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setUserMode("beginner")}
+            style={[
+              styles.toggleButton,
+              userMode === "beginner" && { backgroundColor: colors.surface },
+            ]}
+          >
+            <Text
+              style={[
+                styles.toggleText,
+                {
+                  color:
+                    userMode === "beginner"
+                      ? colors.text
+                      : colors.textSecondary,
+                },
+              ]}
+            >
+              Simple
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setUserMode("advanced")}
+            style={[
+              styles.toggleButton,
+              userMode === "advanced" && { backgroundColor: colors.surface },
+            ]}
+          >
+            <Text
+              style={[
+                styles.toggleText,
+                {
+                  color:
+                    userMode === "advanced"
+                      ? colors.text
+                      : colors.textSecondary,
+                },
+              ]}
+            >
+              Pro
+            </Text>
+          </TouchableOpacity>
+        </View>
         {/* ── Chart Section ── */}
         {userMode === "beginner" ? (
           <BeginnerChart colors={colors} />
@@ -340,6 +415,20 @@ const styles = StyleSheet.create({
   price: { fontSize: 48, fontWeight: "800", letterSpacing: -1 },
   changeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
   changeText: { fontSize: 14, fontWeight: "700" },
+  // ── Toggle Switch ──
+  toggleContainer: {
+    flexDirection: "row",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  toggleText: { fontSize: 15, fontWeight: "700" },
   chartCard: {
     borderRadius: CARD_RADIUS,
     padding: 20,

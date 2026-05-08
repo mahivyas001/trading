@@ -1,5 +1,12 @@
 import { useRouter } from "expo-router";
-import { Minus, Search, TrendingDown, TrendingUp } from "lucide-react-native";
+import {
+    Minus,
+    Moon,
+    Search,
+    Sun,
+    TrendingDown,
+    TrendingUp,
+} from "lucide-react-native";
 import React from "react";
 import {
     ScrollView,
@@ -101,17 +108,15 @@ const watchlistData: WatchlistItemData[] = [
 
 const RadarCard: React.FC<{ item: RadarCardData }> = ({ item }) => {
   const isDarkMode = useAppStore((s) => s.isDarkMode);
-  const router = useRouter(); // Hook to navigate screens
+  const router = useRouter();
 
   const isPositive = item.signal === "Bullish";
   const isNegative = item.signal === "Bearish";
-
   const ChangeIcon = isPositive
     ? TrendingUp
     : isNegative
       ? TrendingDown
       : Minus;
-
   const changeColor = isPositive
     ? "#10B981"
     : isNegative
@@ -122,9 +127,7 @@ const RadarCard: React.FC<{ item: RadarCardData }> = ({ item }) => {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => router.push(`/stock/${item.ticker}`)}
-      className={`rounded-2xl p-5 mr-4 w-44 shadow-sm ${
-        isDarkMode ? "bg-[#1E293B]" : "bg-white"
-      }`}
+      className={`rounded-2xl p-5 mr-4 w-44 shadow-sm ${isDarkMode ? "bg-[#1E293B]" : "bg-white"}`}
       style={{
         shadowColor: isDarkMode ? "#000" : "#94A3B8",
         shadowOffset: { width: 0, height: 4 },
@@ -133,37 +136,22 @@ const RadarCard: React.FC<{ item: RadarCardData }> = ({ item }) => {
         elevation: 6,
       }}
     >
-      {/* Ticker */}
       <Text
-        className={`text-lg font-bold ${
-          isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-        }`}
+        className={`text-lg font-bold ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
       >
         {item.ticker}
       </Text>
-
-      {/* Company Name */}
       <Text
-        className={`text-xs mt-0.5 ${
-          isDarkMode ? "text-[#64748B]" : "text-[#64748B]"
-        }`}
+        className={`text-xs mt-0.5 ${isDarkMode ? "text-[#64748B]" : "text-[#64748B]"}`}
       >
         {item.name}
       </Text>
-
-      {/* Separator */}
       <View className="h-px bg-[#64748B]/20 my-3" />
-
-      {/* Price */}
       <Text
-        className={`text-xl font-bold ${
-          isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-        }`}
+        className={`text-xl font-bold ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
       >
         {item.price}
       </Text>
-
-      {/* Change + Badge row */}
       <View className="flex-row items-center justify-between mt-2">
         <View className="flex-row items-center">
           <ChangeIcon size={14} color={changeColor} strokeWidth={2.5} />
@@ -184,7 +172,7 @@ const RadarCard: React.FC<{ item: RadarCardData }> = ({ item }) => {
 
 const WatchlistItem: React.FC<{ item: WatchlistItemData }> = ({ item }) => {
   const isDarkMode = useAppStore((s) => s.isDarkMode);
-  const router = useRouter(); // Hook to navigate screens
+  const router = useRouter();
 
   const isPositive = item.change.startsWith("+");
   const isNeutral = item.change.startsWith("0");
@@ -198,9 +186,7 @@ const WatchlistItem: React.FC<{ item: WatchlistItemData }> = ({ item }) => {
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => router.push(`/stock/${item.ticker}`)}
-      className={`flex-row items-center justify-between rounded-2xl px-5 py-4 mb-3 ${
-        isDarkMode ? "bg-[#1E293B]" : "bg-white"
-      }`}
+      className={`flex-row items-center justify-between rounded-2xl px-5 py-4 mb-3 ${isDarkMode ? "bg-[#1E293B]" : "bg-white"}`}
       style={{
         shadowColor: isDarkMode ? "#000" : "#94A3B8",
         shadowOffset: { width: 0, height: 2 },
@@ -209,13 +195,10 @@ const WatchlistItem: React.FC<{ item: WatchlistItemData }> = ({ item }) => {
         elevation: 3,
       }}
     >
-      {/* Left: Ticker + Name */}
       <View className="flex-1">
         <View className="flex-row items-center">
           <Text
-            className={`text-base font-bold ${
-              isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-            }`}
+            className={`text-base font-bold ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
           >
             {item.ticker}
           </Text>
@@ -224,20 +207,14 @@ const WatchlistItem: React.FC<{ item: WatchlistItemData }> = ({ item }) => {
           </View>
         </View>
         <Text
-          className={`text-xs mt-0.5 ${
-            isDarkMode ? "text-[#64748B]" : "text-[#64748B]"
-          }`}
+          className={`text-xs mt-0.5 ${isDarkMode ? "text-[#64748B]" : "text-[#64748B]"}`}
         >
           {item.name}
         </Text>
       </View>
-
-      {/* Right: Price + Change */}
       <View className="items-end">
         <Text
-          className={`text-base font-bold ${
-            isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-          }`}
+          className={`text-base font-bold ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
         >
           {item.price}
         </Text>
@@ -264,7 +241,7 @@ const WatchlistItem: React.FC<{ item: WatchlistItemData }> = ({ item }) => {
 // ─── Home Screen ─────────────────────────────────────────────────────────────
 
 const HomeScreen: React.FC = () => {
-  const isDarkMode = useAppStore((s) => s.isDarkMode);
+  const { isDarkMode, toggleDarkMode } = useAppStore(); // <-- Hooked up toggleDarkMode!
 
   return (
     <View className={`flex-1 ${isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]"}`}>
@@ -273,22 +250,31 @@ const HomeScreen: React.FC = () => {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ──────────────────────── */}
-        <View className="px-6 pt-14 pb-4">
-          <Text
-            className={`text-2xl font-bold ${
-              isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-            }`}
+        {/* ── Header with Sun/Moon ──────────────────────── */}
+        <View className="px-6 pt-14 pb-4 flex-row justify-between items-start">
+          <View>
+            <Text
+              className={`text-3xl font-extrabold tracking-tight ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
+            >
+              Smart Stock
+            </Text>
+            <Text
+              className={`text-3xl font-extrabold tracking-tight ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
+            >
+              Analysis
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={toggleDarkMode}
+            className={`p-3 rounded-full ${isDarkMode ? "bg-[#1E293B]" : "bg-gray-200"}`}
           >
-            Smart Stock
-          </Text>
-          <Text
-            className={`text-2xl font-bold ${
-              isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-            }`}
-          >
-            Analysis
-          </Text>
+            {isDarkMode ? (
+              <Sun color="#94A3B8" size={22} />
+            ) : (
+              <Moon color="#64748B" size={22} />
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* ── Search Bar ──────────────────── */}
@@ -299,13 +285,6 @@ const HomeScreen: React.FC = () => {
                 ? "bg-[#1E293B] border border-[#334155]"
                 : "bg-white border border-[#E2E8F0]"
             }`}
-            style={{
-              shadowColor: isDarkMode ? "#000" : "#94A3B8",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: isDarkMode ? 0.3 : 0.06,
-              shadowRadius: 8,
-              elevation: 3,
-            }}
           >
             <Search
               size={20}
@@ -313,9 +292,7 @@ const HomeScreen: React.FC = () => {
               strokeWidth={2}
             />
             <TextInput
-              className={`flex-1 ml-3 text-base ${
-                isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-              }`}
+              className={`flex-1 ml-3 text-base ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
               placeholder="Search for a stock..."
               placeholderTextColor={isDarkMode ? "#475569" : "#94A3B8"}
               autoCapitalize="none"
@@ -328,9 +305,7 @@ const HomeScreen: React.FC = () => {
         <View className="mb-6">
           <View className="flex-row items-center justify-between px-6 mb-4">
             <Text
-              className={`text-lg font-bold ${
-                isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-              }`}
+              className={`text-lg font-bold ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
             >
               Today's AI Radar
             </Text>
@@ -357,9 +332,7 @@ const HomeScreen: React.FC = () => {
         <View className="px-6">
           <View className="flex-row items-center justify-between mb-4">
             <Text
-              className={`text-lg font-bold ${
-                isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"
-              }`}
+              className={`text-lg font-bold ${isDarkMode ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}
             >
               Watchlist
             </Text>
