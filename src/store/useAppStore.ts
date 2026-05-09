@@ -19,6 +19,10 @@ export interface StockAnalysis {
   sma_50: number | string;
   sma_200: number | string;
   trend_signal: string;
+  ai_insight: {
+    beginner: string;
+    advanced: string;
+  };
 }
 
 interface AppState {
@@ -119,6 +123,12 @@ export const useAppStore = create<AppState>((set) => ({
           sma_50: 148.5,
           sma_200: 142.1,
           trend_signal: "Neutral (Mock)",
+          ai_insight: {
+            beginner:
+              "This is a simulated AI insight. The stock looks okay, but our backend server is currently offline!",
+            advanced:
+              "Simulated backend data. RSI and SMA indicate neutral consolidation.",
+          },
         },
         isAnalysisLoading: false,
       });

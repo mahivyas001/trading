@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Moon, Sun } from "lucide-react-native";
+import { ChevronLeft, Moon, Sparkles, Sun } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
   ActivityIndicator,
@@ -281,6 +281,56 @@ export default function StockDetailScreen() {
             </View>
           </View>
         </View>
+
+        {/* ── NEW: AI Insight Card ── */}
+        {!isAnalysisLoading && currentAnalysis?.ai_insight && (
+          <View
+            style={{
+              backgroundColor: isDarkMode
+                ? "rgba(79, 70, 229, 0.1)"
+                : "rgba(79, 70, 229, 0.05)",
+              borderColor: colors.accent,
+              borderWidth: 1,
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 20,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 8,
+                gap: 8,
+              }}
+            >
+              <Sparkles color={colors.accent} size={18} />
+              <Text
+                style={{
+                  color: colors.accent,
+                  fontWeight: "800",
+                  fontSize: 14,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                AI Market Insight
+              </Text>
+            </View>
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: 15,
+                lineHeight: 22,
+                fontWeight: "500",
+              }}
+            >
+              {userMode === "beginner"
+                ? currentAnalysis.ai_insight.beginner
+                : currentAnalysis.ai_insight.advanced}
+            </Text>
+          </View>
+        )}
 
         {/* ── Simple / Pro Toggle Switch ── */}
         <View
