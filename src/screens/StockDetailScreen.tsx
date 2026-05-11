@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import SignalBadge from "../components/components/SignalBadge";
-import { useAppStore } from "../store/useAppStore";
+import { ChartPoint, useAppStore } from "../store/useAppStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_HEIGHT = 280;
@@ -31,12 +31,22 @@ const getColors = (isDark: boolean) => ({
   cardShadow: isDark ? "#000" : "#94A3B8",
 });
 
-// ─── Beginner Chart Placeholder ───
+// ─── Beginner Real Line Chart ───
 const BeginnerChart = ({
   colors,
+  data,
 }: {
   colors: ReturnType<typeof getColors>;
+  data: ChartPoint[];
 }) => {
+  if (!data || data.length === 0) return null;
+
+  const linePoints = data.map((d) => d.close);
+  const maxVal = Math.max(...linePoints);
+  const minVal = Math.min(...linePoints);
+  const range = maxVal - minVal || 1;
+  const stepX = (SCREEN_WIDTH - 80) / (linePoints.length - 1);
+
   return (
     <View
       style={[
@@ -47,33 +57,117 @@ const BeginnerChart = ({
       <LinearGradient
         colors={[colors.accentGlow, "transparent"]}
         style={styles.chartGlow}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
       />
       <Text style={[styles.chartTitle, { color: colors.text }]}>
-        Price Performance
+        30-Day Performance
       </Text>
       <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
         Smooth ride to the top 🚀
       </Text>
-      <View
-        style={[
-          styles.chartArea,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text style={{ color: colors.accent, fontWeight: "bold" }}>
-          [ Beautiful Line Chart Here ]
-        </Text>
+
+      <View style={styles.chartArea}>
+        <View style={styles.yAxis}>
+          <Text style={[styles.axisLabel, { color: colors.textSecondary }]}>
+            ${maxVal.toFixed(0)}
+          </Text>
+          <Text style={[styles.axisLabel, { color: colors.textSecondary }]}>
+            ${((maxVal + minVal) / 2).toFixed(0)}
+          </Text>
+          <Text style={[styles.axisLabel, { color: colors.textSecondary }]}>
+            ${minVal.toFixed(0)}
+          </Text>
+        </View>
+
+        <View style={styles.lineChartContainer}>
+          {linePoints.map((val, i) => {
+            const y =
+              CHART_HEIGHT * 0.85 -
+              ((val - minVal) / range) * (CHART_HEIGHT * 0.7);
+            const x = 10 + i * stepX;
+            const isLast = i === linePoints.length - 1;
+            return (
+              <React.Fragment key={`pt-${i}`}>
+                {i > 0 &&
+                  (() => {
+                    const prevY =
+                      CHART_HEIGHT * 0.85 -
+                      ((linePoints[i - 1] - minVal) / range) *
+                        (CHART_HEIGHT * 0.7);
+                    const prevX = 10 + (i - 1) * stepX;
+                    const dx = x - prevX;
+                    const dy = y - prevY;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    return (
+                      <View
+                        style={[
+                          styles.lineSegment,
+                          {
+                            left: prevX,
+                            top: prevY + 1,
+                            width: length,
+                            transform: [{ rotate: `${angle}deg` }],
+                            backgroundColor: isLast
+                              ? colors.green
+                              : colors.accent,
+                            opacity: isLast ? 1 : 0.6,
+                          },
+                        ]}
+                      />
+                    );
+                  })()}
+                {isLast && (
+                  <View
+                    style={[
+                      styles.glowDot,
+                      {
+                        left: x - 10,
+                        top: y - 10,
+                        backgroundColor: colors.green,
+                      },
+                    ]}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
 };
 
-// ─── Advanced Chart Placeholder ───
+// ─── Advanced Real Candlestick Chart ───
 const AdvancedChart = ({
   colors,
+  data,
 }: {
   colors: ReturnType<typeof getColors>;
+  data: ChartPoint[];
 }) => {
+  if (!data || data.length === 0) return null;
+
+  const minPrice = Math.min(...data.map((c) => c.low));
+  const maxPrice = Math.max(...data.map((c) => c.high));
+  const range = maxPrice - minPrice || 1;
+  const maxVol = Math.max(...data.map((c) => c.volume)) || 1;
+
+  // Normalize data for UI drawing (0 to 1 scale)
+  const candles = data.map((c) => ({
+    open: (c.open - minPrice) / range,
+    close: (c.close - minPrice) / range,
+    high: (c.high - minPrice) / range,
+    low: (c.low - minPrice) / range,
+    volume: c.volume / maxVol,
+    rawClose: c.close,
+    rawOpen: c.open,
+  }));
+
+  const gridLines = [0, 1, 2, 3, 4];
+  const candleWidth = Math.min((SCREEN_WIDTH - 100) / candles.length - 2, 8);
+
   return (
     <View
       style={[
@@ -82,20 +176,88 @@ const AdvancedChart = ({
       ]}
     >
       <Text style={[styles.chartTitle, { color: colors.text }]}>
-        1Y Candlestick
+        30-Day Candlestick
       </Text>
       <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
-        Interactive · Volume overlay
+        Price & Volume Analysis
       </Text>
-      <View
-        style={[
-          styles.chartArea,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text style={{ color: colors.textSecondary, fontWeight: "bold" }}>
-          [ Complex Candlestick Chart Here ]
-        </Text>
+
+      <View style={styles.advChartArea}>
+        {/* Y-Axis Labels */}
+        <View style={styles.advYAxis}>
+          {gridLines.map((i) => (
+            <Text
+              key={`yl-${i}`}
+              style={[
+                styles.axisLabelSmall,
+                {
+                  color: colors.textSecondary,
+                  top: (CHART_HEIGHT / gridLines.length) * i + 5,
+                },
+              ]}
+            >
+              ${(maxPrice - (range / gridLines.length) * i).toFixed(0)}
+            </Text>
+          ))}
+        </View>
+
+        {/* Candles */}
+        <View style={styles.candlesContainer}>
+          {candles.map((c, i) => {
+            const isGreen = c.rawClose >= c.rawOpen;
+            const candleColor = isGreen ? colors.green : colors.red;
+            const candleTop =
+              (1 - Math.max(c.open, c.close)) * CHART_HEIGHT * 0.8 + 20;
+            const candleHeight =
+              Math.abs(c.close - c.open) * CHART_HEIGHT * 0.8 || 2;
+            const wickTop = (1 - c.high) * CHART_HEIGHT * 0.8 + 20;
+            const wickHeight = (c.high - c.low) * CHART_HEIGHT * 0.8;
+            const left = 10 + i * (candleWidth + 2);
+
+            return (
+              <React.Fragment key={`c-${i}`}>
+                <View
+                  style={[
+                    styles.wick,
+                    {
+                      left: left + candleWidth / 2 - 1,
+                      top: wickTop,
+                      height: wickHeight,
+                      backgroundColor: colors.textSecondary,
+                      opacity: 0.3,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.candle,
+                    {
+                      left,
+                      top: candleTop,
+                      width: candleWidth,
+                      height: candleHeight,
+                      backgroundColor: candleColor,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.volumeBar,
+                    {
+                      left,
+                      bottom: 0,
+                      width: candleWidth,
+                      height: c.volume * 40,
+                      backgroundColor: isGreen
+                        ? "rgba(16, 185, 129, 0.2)"
+                        : "rgba(244, 63, 94, 0.2)",
+                    },
+                  ]}
+                />
+              </React.Fragment>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -118,7 +280,6 @@ export default function StockDetailScreen() {
   } = useAppStore();
   const colors = getColors(isDarkMode);
 
-  // 1. Grab the basic info from the Home Screen list
   const stockBasic = liveStocks.find((s) => s.ticker === ticker) || {
     ticker: ticker,
     name: `${ticker} Corp`,
@@ -128,12 +289,10 @@ export default function StockDetailScreen() {
     signal: "Neutral" as const,
   };
 
-  // 2. Fetch the heavy math analysis when the screen opens!
   useEffect(() => {
     fetchStockAnalysis(ticker);
   }, [ticker]);
 
-  // 3. Dynamic Stats Arrays based on REAL data!
   const beginnerMetrics = [
     {
       label: "AI Trend",
@@ -282,7 +441,7 @@ export default function StockDetailScreen() {
           </View>
         </View>
 
-        {/* ── NEW: AI Insight Card ── */}
+        {/* ── AI Insight Card ── */}
         {!isAnalysisLoading && currentAnalysis?.ai_insight && (
           <View
             style={{
@@ -332,79 +491,35 @@ export default function StockDetailScreen() {
           </View>
         )}
 
-        {/* ── Simple / Pro Toggle Switch ── */}
-        <View
-          style={[
-            styles.toggleContainer,
-            {
-              backgroundColor: isDarkMode
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-            },
-          ]}
-        >
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setUserMode("beginner")}
-            style={[
-              styles.toggleButton,
-              userMode === "beginner" && { backgroundColor: colors.surface },
-            ]}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                {
-                  color:
-                    userMode === "beginner"
-                      ? colors.text
-                      : colors.textSecondary,
-                },
-              ]}
-            >
-              Simple
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setUserMode("advanced")}
-            style={[
-              styles.toggleButton,
-              userMode === "advanced" && { backgroundColor: colors.surface },
-            ]}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                {
-                  color:
-                    userMode === "advanced"
-                      ? colors.text
-                      : colors.textSecondary,
-                },
-              ]}
-            >
-              Pro
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* ── Chart Section ── */}
-        {userMode === "beginner" ? (
-          <BeginnerChart colors={colors} />
+        {!isAnalysisLoading && currentAnalysis?.chart_data ? (
+          userMode === "beginner" ? (
+            <BeginnerChart colors={colors} data={currentAnalysis.chart_data} />
+          ) : (
+            <AdvancedChart colors={colors} data={currentAnalysis.chart_data} />
+          )
         ) : (
-          <AdvancedChart colors={colors} />
-        )}
-
-        {/* ── Dynamic Stats Loading ── */}
-        {isAnalysisLoading ? (
-          <View style={{ padding: 40, alignItems: "center" }}>
+          <View
+            style={[
+              styles.chartCard,
+              {
+                height: CHART_HEIGHT,
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
             <ActivityIndicator size="large" color="#4F46E5" />
             <Text style={{ color: colors.textSecondary, marginTop: 12 }}>
-              Calculating technicals...
+              Drawing Charts...
             </Text>
           </View>
-        ) : (
+        )}
+
+        {/* ── Dynamic Stats ── */}
+        {!isAnalysisLoading && (
           <View style={styles.statsContainer}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {userMode === "beginner"
@@ -413,7 +528,6 @@ export default function StockDetailScreen() {
             </Text>
 
             {userMode === "beginner" ? (
-              // Beginner UI
               beginnerMetrics.map((metric, i) => (
                 <View
                   key={i}
@@ -452,7 +566,6 @@ export default function StockDetailScreen() {
                 </View>
               ))
             ) : (
-              // Advanced UI
               <View style={styles.advancedGrid}>
                 {advancedMetrics.map((metric, i) => (
                   <View
@@ -503,7 +616,7 @@ export default function StockDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
-  header: { marginBottom: 24 },
+  header: { marginBottom: 20 },
   headerTop: {
     flexDirection: "row",
     alignItems: "center",
@@ -520,19 +633,6 @@ const styles = StyleSheet.create({
   price: { fontSize: 48, fontWeight: "800", letterSpacing: -1 },
   changeBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
   changeText: { fontSize: 14, fontWeight: "700" },
-  toggleContainer: {
-    flexDirection: "row",
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  toggleText: { fontSize: 15, fontWeight: "700" },
   chartCard: {
     borderRadius: CARD_RADIUS,
     padding: 20,
@@ -553,7 +653,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     opacity: 0.7,
   },
-  chartArea: { height: CHART_HEIGHT },
+  chartArea: { flexDirection: "row", height: CHART_HEIGHT },
+  yAxis: { width: 44, justifyContent: "space-between", paddingVertical: 4 },
+  axisLabel: { fontSize: 10, fontWeight: "600", opacity: 0.5 },
+  axisLabelSmall: { fontSize: 9, fontWeight: "500", opacity: 0.4 },
+  lineChartContainer: { flex: 1, height: CHART_HEIGHT, position: "relative" },
+  lineSegment: { position: "absolute", height: 2.5, borderRadius: 1.5 },
+  glowDot: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    opacity: 0.3,
+  },
+  advChartArea: { height: CHART_HEIGHT + 30, position: "relative" },
+  advYAxis: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 36,
+    height: CHART_HEIGHT,
+  },
+  candlesContainer: {
+    position: "absolute",
+    left: 40,
+    right: 0,
+    top: 0,
+    height: CHART_HEIGHT,
+    flexDirection: "row",
+    alignItems: "flex-end",
+  },
+  wick: { position: "absolute", width: 2, borderRadius: 1 },
+  candle: { position: "absolute", borderRadius: 2, borderWidth: 0.5 },
+  volumeBar: { position: "absolute", borderRadius: 1 },
   statsContainer: { marginBottom: 20 },
   sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
   statRow: {

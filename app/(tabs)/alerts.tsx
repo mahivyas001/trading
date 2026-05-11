@@ -1,79 +1,44 @@
-import {
-    Bell,
-    Plus,
-    X
-} from "lucide-react-native";
+import { Bell, Plus, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAppStore } from "../../src/store/useAppStore";
-
-// ─── Mock Alert Data ──────────────────────────────────────────────────────────
-
-const mockAlerts = [
-  {
-    id: "1",
-    ticker: "AAPL",
-    type: "AI Signal Change",
-    description: "Alert me if AI signal turns Bearish",
-    icon: "🤖",
-    active: true,
-  },
-  {
-    id: "2",
-    ticker: "TSLA",
-    type: "Price Drop",
-    description: "Alert me if price drops by 5%",
-    icon: "📉",
-    active: true,
-  },
-  {
-    id: "3",
-    ticker: "NVDA",
-    type: "News Sentiment",
-    description: "Alert me if bad news breaks",
-    icon: "📰",
-    active: false,
-  },
-];
-
-// ─── Alert Type Options ───────────────────────────────────────────────────────
 
 const alertTypes = [
   {
     id: "signal",
     title: "AI Signal Change",
-    subtitle: "Get notified when signal turns Bullish or Bearish",
+    subtitle: "Notify when signal turns Bullish or Bearish",
     emoji: "🤖",
   },
   {
     id: "price",
     title: "Price Drop (Buy the Dip)",
-    subtitle: "Get notified if the stock drops by 5% or more",
+    subtitle: "Notify if the stock drops by 5% or more",
     emoji: "📉",
   },
   {
     id: "news",
     title: "Negative News Alert",
-    subtitle: "Get notified if bad news or sentiment drops",
+    subtitle: "Notify if bad news or sentiment drops",
     emoji: "📰",
   },
 ];
 
-// ─── Main Alerts Screen ───────────────────────────────────────────────────────
-
 export default function AlertsScreen() {
-  const { isDarkMode } = useAppStore();
+  const { isDarkMode, alerts, addAlert, toggleAlert } = useAppStore();
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedAlertType, setSelectedAlertType] = useState<string | null>(
-    null,
-  );
+  const [selectedType, setSelectedType] = useState<
+    (typeof alertTypes)[0] | null
+  >(null);
+  const [tickerInput, setTickerInput] = useState("");
 
   const colors = {
     bg: isDarkMode ? "#0F172A" : "#F8FAFC",
@@ -83,6 +48,23 @@ export default function AlertsScreen() {
     border: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
     modalBg: isDarkMode ? "#1E293B" : "#FFFFFF",
     overlay: "rgba(0,0,0,0.6)",
+  };
+
+  const handleSaveAlert = () => {
+    if (!selectedType || !tickerInput.trim()) return;
+
+    addAlert({
+      id: Math.random().toString(),
+      ticker: tickerInput.toUpperCase().trim(),
+      type: selectedType.title,
+      description: selectedType.subtitle,
+      emoji: selectedType.emoji,
+      active: true,
+    });
+
+    setModalVisible(false);
+    setSelectedType(null);
+    setTickerInput("");
   };
 
   return (
@@ -100,7 +82,8 @@ export default function AlertsScreen() {
             <Text
               style={[styles.headerSubtitle, { color: colors.textSecondary }]}
             >
-              {mockAlerts.filter((a) => a.active).length} active alerts
+              {alerts.filter((a) => a.active).length} active alerts watching the
+              market
             </Text>
           </View>
           <View
@@ -119,52 +102,71 @@ export default function AlertsScreen() {
             YOUR ALERTS
           </Text>
 
-          {mockAlerts.map((alert) => (
-            <View
-              key={alert.id}
-              style={[
-                styles.alertCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  opacity: alert.active ? 1 : 0.5,
-                },
-              ]}
-            >
-              <View style={styles.alertLeft}>
-                <Text style={styles.alertEmoji}>{alert.icon}</Text>
-                <View style={styles.alertInfo}>
-                  <View style={styles.alertTitleRow}>
-                    <Text style={[styles.alertTicker, { color: colors.text }]}>
-                      {alert.ticker}
-                    </Text>
-                    <View
+          {alerts.length === 0 ? (
+            <View style={{ padding: 40, alignItems: "center", opacity: 0.5 }}>
+              <Bell color={colors.textSecondary} size={40} />
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  marginTop: 12,
+                  fontWeight: "600",
+                }}
+              >
+                No alerts set yet.
+              </Text>
+            </View>
+          ) : (
+            alerts.map((alert) => (
+              <TouchableOpacity
+                key={alert.id}
+                activeOpacity={0.8}
+                onPress={() => toggleAlert(alert.id)}
+                style={[
+                  styles.alertCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    opacity: alert.active ? 1 : 0.5,
+                  },
+                ]}
+              >
+                <View style={styles.alertLeft}>
+                  <Text style={styles.alertEmoji}>{alert.emoji}</Text>
+                  <View style={styles.alertInfo}>
+                    <View style={styles.alertTitleRow}>
+                      <Text
+                        style={[styles.alertTicker, { color: colors.text }]}
+                      >
+                        {alert.ticker}
+                      </Text>
+                      <View
+                        style={[
+                          styles.alertTypeBadge,
+                          { backgroundColor: "rgba(79, 70, 229, 0.1)" },
+                        ]}
+                      >
+                        <Text style={styles.alertTypeText}>{alert.type}</Text>
+                      </View>
+                    </View>
+                    <Text
                       style={[
-                        styles.alertTypeBadge,
-                        { backgroundColor: "rgba(79, 70, 229, 0.1)" },
+                        styles.alertDescription,
+                        { color: colors.textSecondary },
                       ]}
                     >
-                      <Text style={styles.alertTypeText}>{alert.type}</Text>
-                    </View>
+                      {alert.description}
+                    </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.alertDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {alert.description}
-                  </Text>
                 </View>
-              </View>
-              <View
-                style={[
-                  styles.activeDot,
-                  { backgroundColor: alert.active ? "#10B981" : "#64748B" },
-                ]}
-              />
-            </View>
-          ))}
+                <View
+                  style={[
+                    styles.activeDot,
+                    { backgroundColor: alert.active ? "#10B981" : "#64748B" },
+                  ]}
+                />
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -193,7 +195,6 @@ export default function AlertsScreen() {
           <View
             style={[styles.modalSheet, { backgroundColor: colors.modalBg }]}
           >
-            {/* Modal Handle */}
             <View
               style={[
                 styles.modalHandle,
@@ -201,10 +202,9 @@ export default function AlertsScreen() {
               ]}
             />
 
-            {/* Modal Header */}
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Choose Alert Type
+                Create Alert
               </Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
@@ -217,20 +217,52 @@ export default function AlertsScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Ticker Input */}
             <Text
-              style={[styles.modalSubtitle, { color: colors.textSecondary }]}
+              style={{
+                color: colors.textSecondary,
+                fontWeight: "600",
+                marginBottom: 8,
+                marginTop: 10,
+              }}
             >
-              Select what triggers this alert
+              Stock Ticker:
             </Text>
+            <TextInput
+              value={tickerInput}
+              onChangeText={setTickerInput}
+              placeholder="e.g., AAPL"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="characters"
+              style={{
+                backgroundColor: isDarkMode ? "#0F172A" : "#F8FAFC",
+                color: colors.text,
+                padding: 16,
+                borderRadius: 12,
+                fontSize: 16,
+                fontWeight: "700",
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 20,
+              }}
+            />
 
-            {/* Alert Type Options */}
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontWeight: "600",
+                marginBottom: 8,
+              }}
+            >
+              Trigger Condition:
+            </Text>
             {alertTypes.map((type) => {
-              const isSelected = selectedAlertType === type.id;
+              const isSelected = selectedType?.id === type.id;
               return (
                 <TouchableOpacity
                   key={type.id}
                   activeOpacity={0.8}
-                  onPress={() => setSelectedAlertType(type.id)}
+                  onPress={() => setSelectedType(type)}
                   style={[
                     styles.alertTypeCard,
                     {
@@ -272,15 +304,12 @@ export default function AlertsScreen() {
             {/* Save Button */}
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => {
-                setModalVisible(false);
-                setSelectedAlertType(null);
-              }}
+              onPress={handleSaveAlert}
               style={[
                 styles.saveButton,
-                { opacity: selectedAlertType ? 1 : 0.4 },
+                { opacity: selectedType && tickerInput.trim() ? 1 : 0.4 },
               ]}
-              disabled={!selectedAlertType}
+              disabled={!selectedType || !tickerInput.trim()}
             >
               <Text style={styles.saveButtonText}>Save Alert</Text>
             </TouchableOpacity>
@@ -292,7 +321,6 @@ export default function AlertsScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
@@ -327,11 +355,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
   },
   alertLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   alertEmoji: { fontSize: 28, marginRight: 14 },
@@ -361,11 +384,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     gap: 8,
-    shadowColor: "#4F46E5",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
   },
   createButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
   modalOverlay: { flex: 1, justifyContent: "flex-end" },
@@ -422,7 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 14,
   },
   saveButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

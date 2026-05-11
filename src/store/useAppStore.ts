@@ -11,7 +11,24 @@ export interface StockData {
   signal: "Bullish" | "Bearish" | "Neutral";
 }
 
-// ─── NEW: Interface for our Math Engine Data ───
+export interface ChartPoint {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface AppAlert {
+  id: string;
+  ticker: string;
+  type: string;
+  description: string;
+  emoji: string;
+  active: boolean;
+}
+
 export interface StockAnalysis {
   ticker: string;
   current_price: number;
@@ -23,25 +40,31 @@ export interface StockAnalysis {
     beginner: string;
     advanced: string;
   };
+  chart_data: ChartPoint[];
 }
 
 interface AppState {
+  // State
+  alerts: AppAlert[];
   isDarkMode: boolean;
   userMode: UserMode;
   liveStocks: StockData[];
   isLoading: boolean;
-
-  // NEW: Holds the data for the specific stock you click on
   currentAnalysis: StockAnalysis | null;
   isAnalysisLoading: boolean;
 
+  // Actions
+  addAlert: (alert: AppAlert) => void;
+  toggleAlert: (id: string) => void;
   toggleDarkMode: () => void;
   setUserMode: (mode: UserMode) => void;
   fetchLiveMarketData: () => Promise<void>;
-  fetchStockAnalysis: (ticker: string) => Promise<void>; // NEW!
+  fetchStockAnalysis: (ticker: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
+  // Initial state
+  alerts: [],
   isDarkMode: true,
   userMode: "beginner",
   liveStocks: [],
@@ -49,6 +72,20 @@ export const useAppStore = create<AppState>((set) => ({
   currentAnalysis: null,
   isAnalysisLoading: true,
 
+  // Alert actions
+  addAlert: (alert) =>
+    set((state) => ({
+      alerts: [alert, ...state.alerts],
+    })),
+
+  toggleAlert: (id) =>
+    set((state) => ({
+      alerts: state.alerts.map((a) =>
+        a.id === id ? { ...a, active: !a.active } : a,
+      ),
+    })),
+
+  // Other actions
   toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
   setUserMode: (mode) => set({ userMode: mode }),
 
@@ -99,7 +136,6 @@ export const useAppStore = create<AppState>((set) => ({
     }
   },
 
-  // ─── NEW: Fetch Real Math from Backend ───
   fetchStockAnalysis: async (ticker: string) => {
     set({ isAnalysisLoading: true, currentAnalysis: null });
     try {
@@ -114,7 +150,6 @@ export const useAppStore = create<AppState>((set) => ({
       }
     } catch (error) {
       console.warn("Analysis Backend offline. Using Mock Analysis.");
-      // Fallback if Python server is off
       set({
         currentAnalysis: {
           ticker: ticker,
@@ -129,6 +164,7 @@ export const useAppStore = create<AppState>((set) => ({
             advanced:
               "Simulated backend data. RSI and SMA indicate neutral consolidation.",
           },
+          chart_data: [], // <-- Added missing field
         },
         isAnalysisLoading: false,
       });
