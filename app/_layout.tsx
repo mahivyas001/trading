@@ -4,7 +4,7 @@ export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="stock" />
+      <Stack.Screen name="stock/[ticker]" />
     </Stack>
   );
 }

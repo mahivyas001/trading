@@ -92,7 +92,7 @@ export const useAppStore = create<AppState>((set) => ({
   fetchLiveMarketData: async () => {
     set({ isLoading: true });
     try {
-      const response = await fetch("http://localhost:8000/api/market");
+      const response = await fetch("http://192.168.1.1/api/market");
       const json = await response.json();
       if (json.success) {
         set({ liveStocks: json.data, isLoading: false });
@@ -100,7 +100,8 @@ export const useAppStore = create<AppState>((set) => ({
         throw new Error("Backend returned an error.");
       }
     } catch (error) {
-      console.warn("Backend offline! Using Fallback Data.");
+      console.warn("Backend offline or unreachable! Error details:");
+      console.error(error);
       const mockSymbols = [
         "AAPL",
         "TSLA",
@@ -139,9 +140,7 @@ export const useAppStore = create<AppState>((set) => ({
   fetchStockAnalysis: async (ticker: string) => {
     set({ isAnalysisLoading: true, currentAnalysis: null });
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/analyze/${ticker}`,
-      );
+      const response = await fetch(`http://192.168.1.1/api/analyze/${ticker}`);
       const json = await response.json();
       if (json.success) {
         set({ currentAnalysis: json.analysis, isAnalysisLoading: false });
@@ -149,7 +148,8 @@ export const useAppStore = create<AppState>((set) => ({
         throw new Error("Analysis failed");
       }
     } catch (error) {
-      console.warn("Analysis Backend offline. Using Mock Analysis.");
+      console.warn("Backend offline or unreachable! Error details:");
+      console.error(error);
       set({
         currentAnalysis: {
           ticker: ticker,
