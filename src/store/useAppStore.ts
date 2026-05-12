@@ -92,7 +92,7 @@ export const useAppStore = create<AppState>((set) => ({
   fetchLiveMarketData: async () => {
     set({ isLoading: true });
     try {
-      const response = await fetch("http://192.168.1.1:8000/api/market");
+      const response = await fetch("http://192.168.1.9:8001/api/market");
       const json = await response.json();
       if (json.success) {
         set({ liveStocks: json.data, isLoading: false });
@@ -141,7 +141,7 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isAnalysisLoading: true, currentAnalysis: null });
     try {
       const response = await fetch(
-        `http://192.168.1.1:8000/api/analyze/${ticker}`,
+        `http://192.168.1.9:8001/api/analyze/${ticker}`,
       );
       const json = await response.json();
       if (json.success) {
