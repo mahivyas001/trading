@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import SignalBadge from "../components/components/SignalBadge";
+import SignalBadge from "../components/SignalBadge";
 import { ChartPoint, useAppStore } from "../store/useAppStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");

@@ -7,19 +7,10 @@ interface SignalBadgeProps {
   signal: Signal;
 }
 
-const signalStyles: Record<Signal, { textColor: string; bgClass: string }> = {
-  Bullish: {
-    textColor: "#10B981",
-    bgClass: "bg-bullish",
-  },
-  Bearish: {
-    textColor: "#F43F5E",
-    bgClass: "bg-bearish",
-  },
-  Neutral: {
-    textColor: "#64748B",
-    bgClass: "bg-neutral",
-  },
+const signalStyles: Record<Signal, { textColor: string }> = {
+  Bullish: { textColor: "#10B981" },
+  Bearish: { textColor: "#F43F5E" },
+  Neutral: { textColor: "#64748B" },
 };
 
 const SignalBadge: React.FC<SignalBadgeProps> = ({ signal }) => {
@@ -27,7 +18,7 @@ const SignalBadge: React.FC<SignalBadgeProps> = ({ signal }) => {
 
   return (
     <View
-      className={`self-start rounded-full px-3 py-1`}
+      className="self-start rounded-full px-3 py-1"
       style={{
         backgroundColor:
           signal === "Bullish"
@@ -39,7 +30,7 @@ const SignalBadge: React.FC<SignalBadgeProps> = ({ signal }) => {
     >
       <Text
         style={{ color: style.textColor }}
-        className="text-xs font-semibold tracking-wide"
+        className="text-xs font-bold tracking-wide"
       >
         {signal}
       </Text>
