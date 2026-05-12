@@ -56,6 +56,7 @@ interface AppState {
   // Actions
   addAlert: (alert: AppAlert) => void;
   toggleAlert: (id: string) => void;
+  removeAlert: (id: string) => void;
   toggleDarkMode: () => void;
   setUserMode: (mode: UserMode) => void;
   fetchLiveMarketData: () => Promise<void>;
@@ -83,6 +84,11 @@ export const useAppStore = create<AppState>((set) => ({
       alerts: state.alerts.map((a) =>
         a.id === id ? { ...a, active: !a.active } : a,
       ),
+    })),
+
+  removeAlert: (id) =>
+    set((state) => ({
+      alerts: state.alerts.filter((a) => a.id !== id),
     })),
 
   // Other actions

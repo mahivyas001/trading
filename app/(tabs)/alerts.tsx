@@ -1,446 +1,478 @@
-import { Bell, Plus, X } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  FlatList,
   Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
+  PanResponder,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Card } from "../../src/components/Card";
+import { Typography } from "../../src/components/Typography";
 import { useAppStore } from "../../src/store/useAppStore";
 
-const alertTypes = [
-  {
-    id: "signal",
-    title: "AI Signal Change",
-    subtitle: "Notify when signal turns Bullish or Bearish",
-    emoji: "🤖",
-  },
-  {
-    id: "price",
-    title: "Price Drop (Buy the Dip)",
-    subtitle: "Notify if the stock drops by 5% or more",
-    emoji: "📉",
-  },
-  {
-    id: "news",
-    title: "Negative News Alert",
-    subtitle: "Notify if bad news or sentiment drops",
-    emoji: "📰",
-  },
-];
+// ---------- Swipeable Row ----------
+const SwipeableRow = ({
+  children,
+  onDelete,
+}: {
+  children: React.ReactNode;
+  onDelete: () => void;
+}) => {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const deleteBtnWidth = 80;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dx < 0) {
+          translateX.setValue(Math.max(gestureState.dx, -deleteBtnWidth));
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx < -50) {
+          Animated.spring(translateX, {
+            toValue: -deleteBtnWidth,
+            useNativeDriver: true,
+          }).start();
+        } else {
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    }),
+  ).current;
 
-export default function AlertsScreen() {
-  const { isDarkMode, alerts, addAlert, toggleAlert } = useAppStore();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedType, setSelectedType] = useState<
-    (typeof alertTypes)[0] | null
-  >(null);
-  const [tickerInput, setTickerInput] = useState("");
-
-  const colors = {
-    bg: isDarkMode ? "#0F172A" : "#F8FAFC",
-    surface: isDarkMode ? "#1E293B" : "#FFFFFF",
-    text: isDarkMode ? "#F8FAFC" : "#0F172A",
-    textSecondary: isDarkMode ? "#94A3B8" : "#64748B",
-    border: isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-    modalBg: isDarkMode ? "#1E293B" : "#FFFFFF",
-    overlay: "rgba(0,0,0,0.6)",
-  };
-
-  const handleSaveAlert = () => {
-    if (!selectedType || !tickerInput.trim()) return;
-
-    addAlert({
-      id: Math.random().toString(),
-      ticker: tickerInput.toUpperCase().trim(),
-      type: selectedType.title,
-      description: selectedType.subtitle,
-      emoji: selectedType.emoji,
-      active: true,
-    });
-
-    setModalVisible(false);
-    setSelectedType(null);
-    setTickerInput("");
+  const resetSwipe = () => {
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+    <View className="overflow-hidden rounded-card">
+      <Animated.View style={{ transform: [{ translateX }] }}>
+        {children}
+      </Animated.View>
+      <View
+        className="absolute top-0 right-0 h-full justify-center bg-bearish"
+        style={{ width: deleteBtnWidth }}
       >
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Smart Alerts
-            </Text>
-            <Text
-              style={[styles.headerSubtitle, { color: colors.textSecondary }]}
-            >
-              {alerts.filter((a) => a.active).length} active alerts watching the
-              market
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.headerBadge,
-              { backgroundColor: "rgba(79, 70, 229, 0.15)" },
-            ]}
-          >
-            <Bell color="#4F46E5" size={20} />
-          </View>
-        </View>
-
-        {/* ── Active Alerts List ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            YOUR ALERTS
-          </Text>
-
-          {alerts.length === 0 ? (
-            <View style={{ padding: 40, alignItems: "center", opacity: 0.5 }}>
-              <Bell color={colors.textSecondary} size={40} />
-              <Text
-                style={{
-                  color: colors.textSecondary,
-                  marginTop: 12,
-                  fontWeight: "600",
-                }}
-              >
-                No alerts set yet.
-              </Text>
-            </View>
-          ) : (
-            alerts.map((alert) => (
-              <TouchableOpacity
-                key={alert.id}
-                activeOpacity={0.8}
-                onPress={() => toggleAlert(alert.id)}
-                style={[
-                  styles.alertCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    opacity: alert.active ? 1 : 0.5,
-                  },
-                ]}
-              >
-                <View style={styles.alertLeft}>
-                  <Text style={styles.alertEmoji}>{alert.emoji}</Text>
-                  <View style={styles.alertInfo}>
-                    <View style={styles.alertTitleRow}>
-                      <Text
-                        style={[styles.alertTicker, { color: colors.text }]}
-                      >
-                        {alert.ticker}
-                      </Text>
-                      <View
-                        style={[
-                          styles.alertTypeBadge,
-                          { backgroundColor: "rgba(79, 70, 229, 0.1)" },
-                        ]}
-                      >
-                        <Text style={styles.alertTypeText}>{alert.type}</Text>
-                      </View>
-                    </View>
-                    <Text
-                      style={[
-                        styles.alertDescription,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {alert.description}
-                    </Text>
-                  </View>
-                </View>
-                <View
-                  style={[
-                    styles.activeDot,
-                    { backgroundColor: alert.active ? "#10B981" : "#64748B" },
-                  ]}
-                />
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-      </ScrollView>
-
-      {/* ── Floating Create Alert Button ── */}
-      <View style={styles.floatingButtonContainer}>
         <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => setModalVisible(true)}
-          style={styles.createButton}
+          className="items-center justify-center flex-1 px-2"
+          onPress={() => {
+            onDelete();
+            resetSwipe();
+          }}
         >
-          <Plus color="#FFFFFF" size={20} strokeWidth={2.5} />
-          <Text style={styles.createButtonText}>Create New Alert</Text>
+          <Typography variant="caption" className="text-white font-semibold">
+            Delete
+          </Typography>
         </TouchableOpacity>
       </View>
-
-      {/* ── Bottom Sheet Modal ── */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View
-          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
-        >
-          <View
-            style={[styles.modalSheet, { backgroundColor: colors.modalBg }]}
-          >
-            <View
-              style={[
-                styles.modalHandle,
-                { backgroundColor: isDarkMode ? "#334155" : "#E2E8F0" },
-              ]}
-            />
-
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                Create Alert
-              </Text>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={[
-                  styles.closeButton,
-                  { backgroundColor: isDarkMode ? "#0F172A" : "#F1F5F9" },
-                ]}
-              >
-                <X color={colors.textSecondary} size={18} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Ticker Input */}
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontWeight: "600",
-                marginBottom: 8,
-                marginTop: 10,
-              }}
-            >
-              Stock Ticker:
-            </Text>
-            <TextInput
-              value={tickerInput}
-              onChangeText={setTickerInput}
-              placeholder="e.g., AAPL"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="characters"
-              style={{
-                backgroundColor: isDarkMode ? "#0F172A" : "#F8FAFC",
-                color: colors.text,
-                padding: 16,
-                borderRadius: 12,
-                fontSize: 16,
-                fontWeight: "700",
-                borderWidth: 1,
-                borderColor: colors.border,
-                marginBottom: 20,
-              }}
-            />
-
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontWeight: "600",
-                marginBottom: 8,
-              }}
-            >
-              Trigger Condition:
-            </Text>
-            {alertTypes.map((type) => {
-              const isSelected = selectedType?.id === type.id;
-              return (
-                <TouchableOpacity
-                  key={type.id}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedType(type)}
-                  style={[
-                    styles.alertTypeCard,
-                    {
-                      backgroundColor: isSelected
-                        ? "rgba(79, 70, 229, 0.1)"
-                        : isDarkMode
-                          ? "#0F172A"
-                          : "#F8FAFC",
-                      borderColor: isSelected ? "#4F46E5" : colors.border,
-                      borderWidth: isSelected ? 1.5 : 1,
-                    },
-                  ]}
-                >
-                  <Text style={styles.alertTypeEmoji}>{type.emoji}</Text>
-                  <View style={styles.alertTypeInfo}>
-                    <Text
-                      style={[styles.alertTypeTitle, { color: colors.text }]}
-                    >
-                      {type.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.alertTypeSubtitle,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {type.subtitle}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <View style={styles.selectedIndicator}>
-                      <Text style={styles.selectedCheck}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-
-            {/* Save Button */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleSaveAlert}
-              style={[
-                styles.saveButton,
-                { opacity: selectedType && tickerInput.trim() ? 1 : 0.4 },
-              ]}
-              disabled={!selectedType || !tickerInput.trim()}
-            >
-              <Text style={styles.saveButtonText}>Save Alert</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
-}
+};
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 24,
-  },
-  headerTitle: { fontSize: 32, fontWeight: "800", letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 14, fontWeight: "500", marginTop: 4 },
-  headerBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  section: { paddingHorizontal: 20 },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
-  alertCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 10,
-  },
-  alertLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
-  alertEmoji: { fontSize: 28, marginRight: 14 },
-  alertInfo: { flex: 1 },
-  alertTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  alertTicker: { fontSize: 16, fontWeight: "800" },
-  alertTypeBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  alertTypeText: { fontSize: 10, fontWeight: "700", color: "#4F46E5" },
-  alertDescription: { fontSize: 12, fontWeight: "500" },
-  activeDot: { width: 10, height: 10, borderRadius: 5, marginLeft: 12 },
-  floatingButtonContainer: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-  },
-  createButton: {
-    backgroundColor: "#4F46E5",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-  },
-  createButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-  modalOverlay: { flex: 1, justifyContent: "flex-end" },
-  modalSheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  modalTitle: { fontSize: 22, fontWeight: "800" },
-  closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalSubtitle: { fontSize: 14, fontWeight: "500", marginBottom: 20 },
-  alertTypeCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 10,
-  },
-  alertTypeEmoji: { fontSize: 26, marginRight: 14 },
-  alertTypeInfo: { flex: 1 },
-  alertTypeTitle: { fontSize: 15, fontWeight: "700", marginBottom: 3 },
-  alertTypeSubtitle: { fontSize: 12, fontWeight: "500" },
-  selectedIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#4F46E5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectedCheck: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
-  saveButton: {
-    backgroundColor: "#4F46E5",
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 14,
-  },
-  saveButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-});
+// ---------- Toast ----------
+const Toast = ({
+  message,
+  visible,
+  onHide,
+}: {
+  message: string;
+  visible: boolean;
+  onHide: () => void;
+}) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (visible) {
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => onHide());
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      style={{ opacity }}
+      className="absolute top-12 left-0 right-0 items-center z-50"
+    >
+      <View className="bg-primary-dark dark:bg-primary-light px-6 py-3 rounded-full shadow-modal-light dark:shadow-modal-dark">
+        <Typography variant="body" className="text-white font-semibold">
+          {message}
+        </Typography>
+      </View>
+    </Animated.View>
+  );
+};
+
+// ---------- Alert Setup Modal ----------
+const AlertSetupModal = ({
+  visible,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (type: string) => void;
+}) => {
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const alertTypes = [
+    {
+      id: "ai_signal",
+      title: "AI Signal Change",
+      description: "Get notified when our AI changes a stock’s signal.",
+      icon: "🤖",
+    },
+    {
+      id: "price_drop",
+      title: "Price Drop",
+      description: "Alert when a stock drops by a certain %.",
+      icon: "📉",
+    },
+    {
+      id: "negative_news",
+      title: "Negative News",
+      description: "Be the first to know about bad news.",
+      icon: "📰",
+    },
+  ];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={onClose}
+        className="flex-1 bg-black/40 justify-end"
+      >
+        <Animated.View
+          className="bg-surface-light dark:bg-surface-dark rounded-modal px-4 pt-6 pb-8 mx-3 mb-3"
+          style={{ transform: [{ translateY: slideAnim }] }}
+        >
+          {/* Handle bar */}
+          <View className="items-center mb-4">
+            <View className="w-12 h-1.5 bg-neutral-light dark:bg-neutral-dark rounded-full" />
+          </View>
+
+          <Typography
+            variant="h3"
+            className="font-semibold mb-6 dark:text-text-dark"
+          >
+            Choose Alert Type
+          </Typography>
+
+          {alertTypes.map((type) => (
+            <TouchableOpacity
+              key={type.id}
+              onPress={() => setSelectedType(type.id)}
+              activeOpacity={0.9}
+              className="mb-4"
+            >
+              <Card
+                variant="outlined"
+                className={`flex-row items-center p-4 ${
+                  selectedType === type.id ? "border-2 border-primary" : ""
+                }`}
+              >
+                <View className="flex-row items-center flex-1">
+                  <Typography variant="h2" className="mr-4">
+                    {type.icon}
+                  </Typography>
+                  <View className="flex-1">
+                    <Typography
+                      variant="body"
+                      className="font-semibold dark:text-text-dark"
+                    >
+                      {type.title}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      className="text-neutral dark:text-neutral-light"
+                    >
+                      {type.description}
+                    </Typography>
+                  </View>
+                </View>
+                {selectedType === type.id && (
+                  <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
+                    <Typography variant="caption" className="text-white">
+                      ✓
+                    </Typography>
+                  </View>
+                )}
+              </Card>
+            </TouchableOpacity>
+          ))}
+
+          <TouchableOpacity
+            disabled={!selectedType}
+            className={`py-3 rounded-button items-center ${
+              selectedType
+                ? "bg-primary"
+                : "bg-neutral-light dark:bg-neutral-dark"
+            }`}
+            onPress={() => {
+              if (selectedType) {
+                onSave(selectedType);
+                onClose();
+              }
+            }}
+          >
+            <Typography
+              variant="body"
+              className={`font-semibold ${
+                selectedType
+                  ? "text-white"
+                  : "text-neutral dark:text-neutral-light"
+              }`}
+            >
+              Save Alert
+            </Typography>
+          </TouchableOpacity>
+        </Animated.View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+// ---------- Main AlertsScreen ----------
+export default function AlertsScreen() {
+  const { alerts, addAlert, toggleAlert, removeAlert } = useAppStore();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const activeCount = alerts.filter((a) => a.active).length;
+
+  const handleSaveAlert = useCallback(
+    (type: string) => {
+      const newAlert = {
+        id: Date.now().toString(),
+        type,
+        ticker: "AAPL", // placeholder – you can add a ticker selector later
+        description: getDescriptionForType(type),
+        emoji: getEmojiForType(type),
+        active: true,
+      };
+      addAlert(newAlert);
+      setToastMessage("Alert created successfully!");
+      setToastVisible(true);
+    },
+    [addAlert],
+  );
+
+  const getDescriptionForType = (type: string) => {
+    switch (type) {
+      case "ai_signal":
+        return "AI signal change for AAPL";
+      case "price_drop":
+        return "Price drops over 5%";
+      case "negative_news":
+        return "Negative news detected";
+      default:
+        return "";
+    }
+  };
+
+  const getEmojiForType = (type: string) => {
+    switch (type) {
+      case "ai_signal":
+        return "🤖";
+      case "price_drop":
+        return "📉";
+      case "negative_news":
+        return "📰";
+      default:
+        return "🔔";
+    }
+  };
+
+  const alertTypeLabels: Record<string, string> = {
+    ai_signal: "AI Signal",
+    price_drop: "Price Drop",
+    negative_news: "Negative News",
+  };
+
+  // Empty state
+  if (alerts.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark justify-center items-center">
+        <Typography variant="h1" className="text-6xl mb-6">
+          📊
+        </Typography>
+        <Typography
+          variant="h3"
+          className="text-center font-semibold mb-2 dark:text-text-dark"
+        >
+          No alerts yet
+        </Typography>
+        <Typography
+          variant="body"
+          className="text-center text-neutral dark:text-neutral-light mb-8"
+        >
+          Tap the + button to create one
+        </Typography>
+
+        {/* FAB */}
+        <TouchableOpacity
+          className="absolute bottom-8 right-8 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-modal-light dark:shadow-modal-dark"
+          onPress={() => setModalVisible(true)}
+        >
+          <Typography variant="h2" className="text-white">
+            +
+          </Typography>
+        </TouchableOpacity>
+
+        <AlertSetupModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSave={handleSaveAlert}
+        />
+        <Toast
+          message={toastMessage}
+          visible={toastVisible}
+          onHide={() => setToastVisible(false)}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+      {/* Header */}
+      <View className="px-4 pt-2 pb-2 flex-row justify-between items-center">
+        <View>
+          <Typography variant="h2" className="font-bold dark:text-text-dark">
+            Smart Alerts
+          </Typography>
+          <Typography
+            variant="caption"
+            className="text-neutral dark:text-neutral-light"
+          >
+            {activeCount} active
+          </Typography>
+        </View>
+      </View>
+
+      {/* Alerts List */}
+      <FlatList
+        data={alerts}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 16 }}
+        ItemSeparatorComponent={() => <View className="h-3" />}
+        renderItem={({ item }) => (
+          <SwipeableRow onDelete={() => removeAlert(item.id)}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => toggleAlert(item.id)}
+            >
+              <Card
+                variant="outlined"
+                className={`flex-row items-center p-4 ${
+                  !item.active ? "opacity-60" : ""
+                }`}
+              >
+                <Typography variant="h2" className="mr-4">
+                  {item.emoji ?? "🔔"}
+                </Typography>
+                <View className="flex-1">
+                  <View className="flex-row items-center gap-2">
+                    <Typography
+                      variant="body"
+                      className="font-semibold dark:text-text-dark"
+                    >
+                      {item.ticker}
+                    </Typography>
+                    <View className="bg-primary/10 dark:bg-primary-dark/10 px-2 py-0.5 rounded-full">
+                      <Typography
+                        variant="caption"
+                        className="text-primary dark:text-primary-light font-medium"
+                      >
+                        {alertTypeLabels[item.type] ?? item.type}
+                      </Typography>
+                    </View>
+                  </View>
+                  <Typography
+                    variant="caption"
+                    className="text-neutral dark:text-neutral-light"
+                  >
+                    {item.description}
+                  </Typography>
+                </View>
+                <View
+                  className={`w-3 h-3 rounded-full ml-2 ${
+                    item.active
+                      ? "bg-primary"
+                      : "bg-neutral-light dark:bg-neutral-dark border border-neutral"
+                  }`}
+                />
+              </Card>
+            </TouchableOpacity>
+          </SwipeableRow>
+        )}
+      />
+
+      {/* FAB */}
+      <TouchableOpacity
+        className="absolute bottom-8 right-8 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-modal-light dark:shadow-modal-dark"
+        onPress={() => setModalVisible(true)}
+      >
+        <Typography variant="h2" className="text-white">
+          +
+        </Typography>
+      </TouchableOpacity>
+
+      <AlertSetupModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSaveAlert}
+      />
+      <Toast
+        message={toastMessage}
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+      />
+    </SafeAreaView>
+  );
+}
