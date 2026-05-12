@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Bell, Home } from "lucide-react-native";
+import { Bell, Home, MessageCircle } from "lucide-react-native";
 import { useAppStore } from "../../src/store/useAppStore";
 
 export default function TabLayout() {
@@ -37,6 +37,13 @@ export default function TabLayout() {
         options={{
           title: "Alerts",
           tabBarIcon: ({ color }) => <Bell color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat",
+          tabBarIcon: ({ color }) => <MessageCircle color={color} size={24} />,
         }}
       />
     </Tabs>
