@@ -4,11 +4,9 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
-  Platform,
   ScrollView,
   TouchableOpacity,
-  UIManager,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, {
@@ -25,14 +23,6 @@ import SignalBadge from "../components/SignalBadge";
 import { Skeleton } from "../components/Skeleton";
 import { Typography } from "../components/Typography";
 import { useAppStore } from "../store/useAppStore";
-
-// Enable LayoutAnimation on Android
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_WIDTH = SCREEN_WIDTH - 48; // accounting for padding
